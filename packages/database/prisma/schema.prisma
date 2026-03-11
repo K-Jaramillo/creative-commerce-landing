@@ -1,0 +1,323 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// AUTENTICACIÓN Y USUARIOS
+// ==========================================
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  name          String
+  role          UserRole @default(BRAND)
+  brandId       String?
+  brand         Brand?   @relation(fields: [brandId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  BRAND
+}
+
+// ==========================================
+// LEADS Y CAPTACIÓN
+// ==========================================
+
+model Lead {
+  id                 String     @id @default(cuid())
+  brandName          String
+  website            String
+  industry           String
+  mainProducts       String
+  alreadyOnTikTok    Boolean    @default(false)
+  monthlySalesVolume String
+  mainObjective      String
+  estimatedBudget    String
+  hasExistingContent Boolean    @default(false)
+  contactName        String
+  email              String
+  phone              String
+  howFoundUs         String?
+  additionalNotes    String?
+  status             LeadStatus @default(NUEVO)
+  callScheduledAt    DateTime?
+  internalNotes      String?
+  aiPlan             AIPlan?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  @@map("leads")
+}
+
+enum LeadStatus {
+  NUEVO
+  PLAN_GENERADO
+  CONTACTADO
+  CONVERTIDO
+  DESCARTADO
+}
+
+model AIPlan {
+  id                 String   @id @default(cuid())
+  leadId             String   @unique
+  lead               Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  brandAnalysis      String
+  recommendedPlan    PlanTier
+  planJustification  String
+  priorityServices   String[]
+  creatorCategories  String[]
+  creatorLanguages   String[]
+  estimatedCreators  Int
+  tiktokPotential    String
+  keyPointsForCall   String[]
+  rawResponse        String?
+  createdAt          DateTime @default(now())
+
+  @@map("ai_plans")
+}
+
+// ==========================================
+// MARCAS (CLIENTES ACTIVOS)
+// ==========================================
+
+model Brand {
+  id              String             @id @default(cuid())
+  name            String
+  website         String?
+  industry        String
+  logo            String?
+  activePlanTier  PlanTier           @default(LAUNCH)
+  isActive        Boolean            @default(true)
+  users           User[]
+  creators        BrandCreatorMatch[]
+  metrics         Metric[]
+  chatMessages    ChatMessage[]
+  content         Content[]
+  liveStreams      LiveStream[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@map("brands")
+}
+
+enum PlanTier {
+  LAUNCH
+  GROWTH
+  SCALE
+}
+
+// ==========================================
+// CREADORES
+// ==========================================
+
+model Creator {
+  id               String              @id @default(cuid())
+  tiktokUsername   String              @unique
+  displayName      String
+  email            String?
+  phone            String?
+  followers        Int                 @default(0)
+  engagementRate   Float               @default(0)
+  averageViews     Int                 @default(0)
+  categories       String[]
+  languages        String[]
+  profileImageUrl  String?
+  bio              String?
+  isInNetwork      Boolean             @default(false)
+  brands           BrandCreatorMatch[]
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@map("creators")
+}
+
+model BrandCreatorMatch {
+  id              String               @id @default(cuid())
+  brandId         String
+  brand           Brand                @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  creatorId       String
+  creator         Creator              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  contactStatus   CreatorContactStatus @default(PENDIENTE)
+  matchScore      Float?
+  matchReason     String?
+  commissionRate  Float?
+  notes           String?
+  contactedAt     DateTime?
+  respondedAt     DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@unique([brandId, creatorId])
+  @@map("brand_creator_matches")
+}
+
+enum CreatorContactStatus {
+  PENDIENTE
+  CONTACTADO
+  INTERESADO
+  ACTIVO
+  RECHAZADO
+}
+
+// ==========================================
+// MÉTRICAS
+// ==========================================
+
+model Metric {
+  id               String   @id @default(cuid())
+  brandId          String
+  brand            Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  date             DateTime
+  gmv              Float    @default(0)
+  roas             Float    @default(0)
+  cpa              Float    @default(0)
+  totalSales       Int      @default(0)
+  affiliateSales   Float    @default(0)
+  liveSales        Float    @default(0)
+  adSales          Float    @default(0)
+  organicSales     Float    @default(0)
+  adSpend          Float    @default(0)
+  totalViews       Int      @default(0)
+  totalOrders      Int      @default(0)
+  createdAt        DateTime @default(now())
+
+  @@map("metrics")
+}
+
+// ==========================================
+// CONTENIDO
+// ==========================================
+
+model Content {
+  id            String        @id @default(cuid())
+  brandId       String
+  brand         Brand         @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  title         String
+  type          ContentType
+  url           String?
+  thumbnailUrl  String?
+  views         Int           @default(0)
+  likes         Int           @default(0)
+  sales         Int           @default(0)
+  status        ContentStatus @default(BORRADOR)
+  publishedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@map("content")
+}
+
+enum ContentType {
+  VIDEO_PRODUCTO
+  UGC
+  CLIP_LIVE
+  COLABORACION
+}
+
+enum ContentStatus {
+  BORRADOR
+  PUBLICADO
+  ARCHIVADO
+}
+
+// ==========================================
+// LIVE STREAMS
+// ==========================================
+
+model LiveStream {
+  id            String          @id @default(cuid())
+  brandId       String
+  brand         Brand           @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  hostName      String
+  scheduledAt   DateTime
+  duration      Int?
+  viewers       Int             @default(0)
+  peakViewers   Int             @default(0)
+  sales         Float           @default(0)
+  orders        Int             @default(0)
+  status        LiveStreamStatus @default(PROGRAMADO)
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@map("live_streams")
+}
+
+enum LiveStreamStatus {
+  PROGRAMADO
+  EN_VIVO
+  COMPLETADO
+  CANCELADO
+}
+
+// ==========================================
+// CHAT
+// ==========================================
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  brandId   String
+  brand     Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  role      ChatRole
+  content   String
+  createdAt DateTime @default(now())
+
+  @@map("chat_messages")
+}
+
+enum ChatRole {
+  USER
+  ASSISTANT
+}
+
+// ==========================================
+// NOTIFICACIONES
+// ==========================================
+
+model Notification {
+  id        String             @id @default(cuid())
+  type      NotificationType
+  title     String
+  message   String
+  targetId  String?
+  isRead    Boolean            @default(false)
+  createdAt DateTime           @default(now())
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  NUEVO_LEAD
+  PLAN_GENERADO
+  LLAMADA_PENDIENTE
+  CREADOR_RESPONDIO
+  METRICA_ALERTA
+}
+
+// ==========================================
+// CATÁLOGO DE SERVICIOS
+// ==========================================
+
+model Service {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String
+  features    String[]
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@map("services")
+}

@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "paths": {
+      "@creative-commerce/database": ["./packages/database/src"],
+      "@creative-commerce/ui": ["./packages/ui/src"],
+      "@creative-commerce/ai": ["./packages/ai/src"],
+      "@creative-commerce/types": ["./packages/types/src"]
+    }
+  },
+  "exclude": ["node_modules"]
+}
