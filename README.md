@@ -61,6 +61,39 @@ Esto levanta las 3 apps simultáneamente:
 - Dashboard Marca: http://localhost:3001
 - Dashboard Interno: http://localhost:3002
 
+## Despliegue en Producción (Docker Swarm + SSL)
+
+### Subdomains
+| App | URL |
+|-----|-----|
+| Landing Page | https://cc.segicaweb.com |
+| Dashboard Marca | https://cc-app.segicaweb.com |
+| Dashboard Interno | https://cc-admin.segicaweb.com |
+
+### Deploy
+```bash
+# 1. Configurar variables de producción
+cp .env.production.example .env.production
+# Editar .env.production con contraseñas reales
+
+# 2. Deploy con Docker Compose
+./scripts/deploy.sh
+
+# 3. Apuntar DNS A records a tu servidor para:
+#    cc.segicaweb.com, cc-app.segicaweb.com, cc-admin.segicaweb.com
+
+# 4. Generar certificados SSL
+./scripts/ssl-init.sh
+
+# 5. Activar HTTPS
+./scripts/ssl-enable.sh
+```
+
+### Deploy con Docker Swarm
+```bash
+./scripts/deploy-swarm.sh
+```
+
 ## Usuarios de prueba
 
 | Rol | Email | Contraseña |

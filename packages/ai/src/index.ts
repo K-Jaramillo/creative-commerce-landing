@@ -173,3 +173,9 @@ export async function checkOllamaHealth(): Promise<boolean> {
     return false;
   }
 }
+
+export { searchCreators, fetchCreatorProfile } from './tiktok';
+export type { TikTokCreatorSearchParams, TikTokCreatorResult } from './tiktok';
+export { calculateMatchScore, rankCreatorsForBrand } from './matching';
+export type { MatchResult } from './matching';
+export { generateOutreachEmail, generateFollowUpEmail, generateAcceptanceEmail } from './outreach';

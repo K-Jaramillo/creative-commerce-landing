@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    deploy:
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 128M
+    environment:
+      POSTGRES_USER: ${DB_USER:-creative_commerce}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-creative_commerce}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-creative_commerce}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  landing:
+    image: dashboardmarcas-landing:latest
+    deploy:
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-creative_commerce}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-creative_commerce}
+      OLLAMA_BASE_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_URL: https://cc.segicaweb.com
+
+  dashboard-marca:
+    image: dashboardmarcas-dashboard-marca:latest
+    deploy:
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-creative_commerce}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-creative_commerce}
+      OLLAMA_BASE_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_URL: https://cc-app.segicaweb.com
+
+  dashboard-interno:
+    image: dashboardmarcas-dashboard-interno:latest
+    deploy:
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-creative_commerce}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-creative_commerce}
+      OLLAMA_BASE_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_URL: https://cc-admin.segicaweb.com
+
+  proxy:
+    image: nginx:alpine
+    deploy:
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - type: bind
+        source: ./nginx/nginx-init.conf
+        target: /etc/nginx/nginx.conf
+        read_only: true
+      - type: bind
+        source: ./nginx/nginx.conf
+        target: /etc/nginx/nginx-ssl.conf
+        read_only: true
+      - certbot_www:/var/www/certbot:ro
+      - certbot_certs:/etc/letsencrypt:ro
+
+volumes:
+  postgres_data:
+  certbot_www:
+  certbot_certs:
